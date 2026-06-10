@@ -257,6 +257,65 @@ int manejarOpcionesMenu(bool& salir, bool& otro){
 	return opcionActual;
 }
 
+// ============================================================
+// 2. Conversion binaria / Gray
+// ============================================================
+
+string numEnBinario(size_t nbits, size_t numero){
+	string n="";
+	size_t cociente=2;
+
+	if(numero!=0){
+		if(numero!=1){
+			while(cociente>=2){
+				cociente = numero/2;
+				n += to_string(numero%2);
+				numero= cociente;
+			}
+		}
+		n += "1";
+	}
+
+	if(nbits>n.size()){
+		int restantes= nbits-n.size();
+		for(int i=0; i<restantes; i++){
+			n += "0";
+		}
+	}
+	
+	string nEnBinario(n.rbegin(), n.rend());
+	return nEnBinario;
+}
+
+int binarioADecimal(string numero) {
+    size_t tam = numero.size();
+    int decimal = 0;
+
+    for (size_t i = tam; i > 0; i--) {
+        int bit = numero[i - 1] - '0'; 
+        decimal += bit * static_cast<int>(pow(2, tam - i));
+    }
+
+    return decimal;
+}
+
+string gray(string numero){
+	
+	int longitud= numero.size();
+	string nuevoNum="";
+	
+	nuevoNum += numero[0];
+	
+	for(int i=1; i<longitud; i++){
+		if(numero[i-1]==numero[i]){
+			nuevoNum += "0";
+		}else{
+			nuevoNum += "1";
+		}
+	}
+	return nuevoNum;
+}
+
 //TODO PARA EL KARNAUGHT
 bool esPotencia2(int contCeldas) {		
     return (contCeldas > 0) && ((contCeldas & (contCeldas - 1)) == 0);
@@ -668,61 +727,6 @@ void mostrarResultado(vector<string> &funciones, int a, char tipo, size_t nFF) {
 }
 
 //**********************************************************************************************************************************************************************
-//TODO LO ANTERIOR AL KARNAUGHT
-string numEnBinario(size_t nbits, size_t numero){
-	string n="";
-	size_t cociente=2;
-
-	if(numero!=0){
-		if(numero!=1){
-			while(cociente>=2){
-				cociente = numero/2;
-				n += to_string(numero%2);
-				numero= cociente;
-			}
-		}
-		n += "1";
-	}
-
-	if(nbits>n.size()){
-		int restantes= nbits-n.size();
-		for(int i=0; i<restantes; i++){
-			n += "0";
-		}
-	}
-	
-	string nEnBinario(n.rbegin(), n.rend());
-	return nEnBinario;
-}
-
-int binarioADecimal(string numero) {
-    size_t tam = numero.size();
-    int decimal = 0;
-
-    for (size_t i = tam; i > 0; i--) {
-        int bit = numero[i - 1] - '0'; 
-        decimal += bit * static_cast<int>(pow(2, tam - i));
-    }
-
-    return decimal;
-}
-
-string gray(string numero){
-	
-	int longitud= numero.size();
-	string nuevoNum="";
-	
-	nuevoNum += numero[0];
-	
-	for(int i=1; i<longitud; i++){
-		if(numero[i-1]==numero[i]){
-			nuevoNum += "0";
-		}else{
-			nuevoNum += "1";
-		}
-	}
-	return nuevoNum;
-}
 
 void armarKmapa(vector<vector<Kcelda>> &mapa, int var_izq, int var_der){
 	
