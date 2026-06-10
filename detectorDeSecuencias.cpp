@@ -261,6 +261,7 @@ int manejarOpcionesMenu(bool& salir, bool& otro){
 // 2. Conversion binaria / Gray
 // ============================================================
 
+// Convierte 'numero' a binario con 'nbits' de ancho (rellena con ceros a la izquierda).
 string numEnBinario(size_t nbits, size_t numero){
 	string n="";
 	size_t cociente=2;
@@ -287,6 +288,7 @@ string numEnBinario(size_t nbits, size_t numero){
 	return nEnBinario;
 }
 
+// Convierte una cadena binaria a su valor decimal.
 int binarioADecimal(string numero) {
     size_t tam = numero.size();
     int decimal = 0;
@@ -299,6 +301,7 @@ int binarioADecimal(string numero) {
     return decimal;
 }
 
+// Convierte una cadena binaria a codigo Gray.
 string gray(string numero){
 	
 	int longitud= numero.size();
@@ -314,6 +317,214 @@ string gray(string numero){
 		}
 	}
 	return nuevoNum;
+}
+
+// ============================================================
+// 3. Construccion de estados
+// ============================================================
+
+// Crea un estado con su id binario y el prefijo de secuencia reconocido, y lo agrega al final.
+void agregarEstado(Estado* &estados, size_t nbits, size_t posicion, string cadena) {
+    Estado* nuevo = new Estado();
+    nuevo->sgt = NULL;
+    nuevo->id = numEnBinario(nbits, posicion);
+    nuevo->bits = cadena.substr(0, posicion);
+
+    if (estados == NULL) {
+    	nuevo->ant= NULL;
+        estados = nuevo;
+    } else {
+        Estado* actual = estados;
+        while (actual->sgt != NULL) {
+            actual = actual->sgt;
+        }
+        nuevo->ant= actual;
+        actual->sgt = nuevo;
+    }
+}
+
+// Crea un estado "don't care" (relleno para completar 2^nFF), con todo en X.
+void agregarDont(Estado* &estados, size_t nbits, size_t posicion) {
+    Estado* nuevo = new Estado();
+    nuevo->sgt = NULL;
+    nuevo->id = numEnBinario(nbits, posicion);
+    nuevo->salida0= "X";
+    nuevo->salida1= "X";
+	
+	for(size_t i=0; i<nbits; i++){
+		nuevo->sgtEstadoX0 +="X"; 
+    	nuevo->sgtEstadoX1 +="X";
+	}
+
+    if (estados == NULL) {
+    	nuevo->ant= NULL;
+        estados = nuevo;
+    } else {
+        Estado* actual = estados;
+        while (actual->sgt != NULL) {
+            actual = actual->sgt;
+        }
+        nuevo->ant= actual;
+        actual->sgt = nuevo;
+    }
+}
+
+// Crea los estados reales y rellena el resto con don't cares hasta llegar a 2^nFF.
+void llenarEstados(Estado* &estados, string cadena, size_t cantidadEstados, size_t cantidadFF){
+	size_t i=0;
+	for(; i<cantidadEstados; i++){
+		agregarEstado(estados, cantidadFF, i, cadena);	
+	}
+	size_t dontCare = (static_cast<size_t>(pow(2, cantidadFF))) - cantidadEstados;
+	
+	for(size_t j=0; j<dontCare; j++, i++){
+		agregarDont(estados, cantidadFF, i);
+	}
+}
+
+// Calcula, para cada estado, su estado siguiente con entrada 0 y 1, y la salida Z.
+// Maneja el modelo (Mealy/Moore) y el traslape al evaluar el ultimo estado.
+void evaluarSgtEstado(Estado* &estados, string secuencia, size_t cantidadEstados, string traslape, string maquina){
+    Estado* actual = estados;
+	
+    if (actual == NULL) {
+        cout << "La lista de estados ESTA VACIA" << endl;
+        return;
+    } else {
+        size_t i = 1;
+        size_t j = 0;
+
+        while (actual != NULL && j < cantidadEstados) {
+			actual->sgtEstadoX1 = "";
+				
+			actual->salida1="0";
+            // PARA 1
+            if (i <= secuencia.size()) {
+            	if(!(maquina=="Mealy" && j+1==cantidadEstados)){	//aplicar solo al ultimo estado en un Mealy
+            		if (actual->bits + "1" == secuencia.substr(0, i)) {
+                    	if (actual->sgt != NULL) {
+                        	actual->sgtEstadoX1 = actual->sgt->id;
+                    	}
+                	}
+				}
+            }
+			if(actual->sgtEstadoX1 == ""){
+                Estado* temp = actual;
+				Estado* anterior= actual;
+                string estadoGanador1 = "";
+
+                if(j+1==cantidadEstados){		//para evaluar el valor de la SALIDA
+                    if(maquina=="Moore"){
+                        actual->salida1="1";
+					}else{
+						if(actual->bits+"1"==secuencia){
+							actual->salida1="1";
+						}
+					}
+				}
+						
+                size_t m = 1;
+                while (temp != NULL) {	
+                    if (m < actual->bits.size() && actual->bits.substr(m) + "1" == temp->bits) {
+                        estadoGanador1 = temp->id;
+
+                        if(!(j+1==cantidadEstados && (traslape=="No"))){	//condicion del traslape
+                			break;
+						}	
+                    }
+
+					if(m==actual->bits.size()){
+						if("1"== temp->bits){
+							estadoGanador1= temp->id;
+						}else{
+							estadoGanador1= temp->ant->id;
+						}
+					}
+                    m++;
+					anterior= temp;
+                    temp = temp->ant;
+                }
+
+                if (estadoGanador1 == "") {
+                    estadoGanador1 = anterior->id;
+                }
+                actual->sgtEstadoX1 = estadoGanador1;
+            }
+
+			// PARA 0
+			actual->salida0="0";
+			actual->sgtEstadoX0 = "";  // Valor por defecto
+
+            if (i <= secuencia.size()) {
+            	if(!(maquina=="Mealy" && j+1==cantidadEstados)){
+	                if (actual->bits + "0" == secuencia.substr(0, i)) {
+	                    if (actual->sgt != NULL) {
+	                        actual->sgtEstadoX0 = actual->sgt->id;
+	                    }
+	                }            		
+				}
+            }
+			if(actual->sgtEstadoX0 == ""){
+                Estado* temp2 = actual;
+				Estado* anterior2= actual;
+                string estadoGanador0 = "";
+				
+				
+				if(j+1==cantidadEstados){		//para evaluar el valor de la SALIDA
+                    if(maquina=="Moore"){
+                        actual->salida0="1";
+					}else{
+						if(actual->bits+"0"==secuencia){
+							actual->salida0="1";
+						}
+					}
+				}
+				
+                size_t k = 1;
+                while (temp2 != NULL) {
+                    if (k < actual->bits.size() && actual->bits.substr(k) + "0" == temp2->bits) {
+                        estadoGanador0 = temp2->id;
+
+                        if(!(j+1==cantidadEstados && (traslape=="No"))){	//condicion del traslape
+                			break;
+						}	
+                    }
+
+					if(k==actual->bits.size()){
+						if("0"== temp2->bits){
+							estadoGanador0= temp2->id;
+						}else{
+							estadoGanador0= temp2->ant->id;
+						}
+					}
+                    k++;
+					anterior2= temp2;
+                    temp2 = temp2->ant;
+                }
+                
+                if (estadoGanador0 == "") {
+                    estadoGanador0 = anterior2->id;
+                }
+                actual->sgtEstadoX0 = estadoGanador0;
+            }
+
+            actual = actual->sgt;
+            i++;
+            j++;
+        }
+    }
+}
+
+// Concatena las salidas de todos los estados (salida0 y salida1) en una sola cadena.
+void salidaString(Estado*& estados, string& salida0101){
+	
+	Estado* actual= estados;
+	
+	while(actual!=NULL){
+		salida0101 += actual->salida0;
+		salida0101 += actual->salida1;
+		actual= actual->sgt;
+	}
 }
 
 //TODO PARA EL KARNAUGHT
@@ -889,61 +1100,7 @@ void encabezadoTablaTransicion(){
 	cout<<endl;
 }
 //*********************************************************************************************************************************
-void agregarEstado(Estado* &estados, size_t nbits, size_t posicion, string cadena) {
-    Estado* nuevo = new Estado();
-    nuevo->sgt = NULL;
-    nuevo->id = numEnBinario(nbits, posicion);
-    nuevo->bits = cadena.substr(0, posicion);
 
-    if (estados == NULL) {
-    	nuevo->ant= NULL;
-        estados = nuevo;
-    } else {
-        Estado* actual = estados;
-        while (actual->sgt != NULL) {
-            actual = actual->sgt;
-        }
-        nuevo->ant= actual;
-        actual->sgt = nuevo;
-    }
-}
-
-void agregarDont(Estado* &estados, size_t nbits, size_t posicion) {
-    Estado* nuevo = new Estado();
-    nuevo->sgt = NULL;
-    nuevo->id = numEnBinario(nbits, posicion);
-    nuevo->salida0= "X";
-    nuevo->salida1= "X";
-	
-	for(size_t i=0; i<nbits; i++){
-		nuevo->sgtEstadoX0 +="X"; 
-    	nuevo->sgtEstadoX1 +="X";
-	}
-
-    if (estados == NULL) {
-    	nuevo->ant= NULL;
-        estados = nuevo;
-    } else {
-        Estado* actual = estados;
-        while (actual->sgt != NULL) {
-            actual = actual->sgt;
-        }
-        nuevo->ant= actual;
-        actual->sgt = nuevo;
-    }
-}
-
-void llenarEstados(Estado* &estados, string cadena, size_t cantidadEstados, size_t cantidadFF){
-	size_t i=0;
-	for(; i<cantidadEstados; i++){
-		agregarEstado(estados, cantidadFF, i, cadena);	
-	}
-	size_t dontCare = (static_cast<size_t>(pow(2, cantidadFF))) - cantidadEstados;
-	
-	for(size_t j=0; j<dontCare; j++, i++){
-		agregarDont(estados, cantidadFF, i);
-	}
-}
 
 void mostrarIDs(Estado* estados){
 	encabezadoTablaTransicion();
@@ -1197,137 +1354,6 @@ void mostrarTablaEstados(int tam, Estado* estados, vector<string> flip1, vector<
 	
 }
 
-void evaluarSgtEstado(Estado* &estados, string secuencia, size_t cantidadEstados, string traslape, string maquina){
-    Estado* actual = estados;
-	
-    if (actual == NULL) {
-        cout << "La lista de estados ESTA VACIA" << endl;
-        return;
-    } else {
-        size_t i = 1;
-        size_t j = 0;
-
-        while (actual != NULL && j < cantidadEstados) {
-			actual->sgtEstadoX1 = "";
-				
-			actual->salida1="0";
-            // PARA 1
-            if (i <= secuencia.size()) {
-            	if(!(maquina=="Mealy" && j+1==cantidadEstados)){	//aplicar solo al ultimo estado en un Mealy
-            		if (actual->bits + "1" == secuencia.substr(0, i)) {
-                    	if (actual->sgt != NULL) {
-                        	actual->sgtEstadoX1 = actual->sgt->id;
-                    	}
-                	}
-				}
-            }
-			if(actual->sgtEstadoX1 == ""){
-                Estado* temp = actual;
-				Estado* anterior= actual;
-                string estadoGanador1 = "";
-
-                if(j+1==cantidadEstados){		//para evaluar el valor de la SALIDA
-                    if(maquina=="Moore"){
-                        actual->salida1="1";
-					}else{
-						if(actual->bits+"1"==secuencia){
-							actual->salida1="1";
-						}
-					}
-				}
-						
-                size_t m = 1;
-                while (temp != NULL) {	
-                    if (m < actual->bits.size() && actual->bits.substr(m) + "1" == temp->bits) {
-                        estadoGanador1 = temp->id;
-
-                        if(!(j+1==cantidadEstados && (traslape=="No"))){	//condicion del traslape
-                			break;
-						}	
-                    }
-
-					if(m==actual->bits.size()){
-						if("1"== temp->bits){
-							estadoGanador1= temp->id;
-						}else{
-							estadoGanador1= temp->ant->id;
-						}
-					}
-                    m++;
-					anterior= temp;
-                    temp = temp->ant;
-                }
-
-                if (estadoGanador1 == "") {
-                    estadoGanador1 = anterior->id;
-                }
-                actual->sgtEstadoX1 = estadoGanador1;
-            }
-
-			// PARA 0
-			actual->salida0="0";
-			actual->sgtEstadoX0 = "";  // Valor por defecto
-
-            if (i <= secuencia.size()) {
-            	if(!(maquina=="Mealy" && j+1==cantidadEstados)){
-	                if (actual->bits + "0" == secuencia.substr(0, i)) {
-	                    if (actual->sgt != NULL) {
-	                        actual->sgtEstadoX0 = actual->sgt->id;
-	                    }
-	                }            		
-				}
-            }
-			if(actual->sgtEstadoX0 == ""){
-                Estado* temp2 = actual;
-				Estado* anterior2= actual;
-                string estadoGanador0 = "";
-				
-				
-				if(j+1==cantidadEstados){		//para evaluar el valor de la SALIDA
-                    if(maquina=="Moore"){
-                        actual->salida0="1";
-					}else{
-						if(actual->bits+"0"==secuencia){
-							actual->salida0="1";
-						}
-					}
-				}
-				
-                size_t k = 1;
-                while (temp2 != NULL) {
-                    if (k < actual->bits.size() && actual->bits.substr(k) + "0" == temp2->bits) {
-                        estadoGanador0 = temp2->id;
-
-                        if(!(j+1==cantidadEstados && (traslape=="No"))){	//condicion del traslape
-                			break;
-						}	
-                    }
-
-					if(k==actual->bits.size()){
-						if("0"== temp2->bits){
-							estadoGanador0= temp2->id;
-						}else{
-							estadoGanador0= temp2->ant->id;
-						}
-					}
-                    k++;
-					anterior2= temp2;
-                    temp2 = temp2->ant;
-                }
-                
-                if (estadoGanador0 == "") {
-                    estadoGanador0 = anterior2->id;
-                }
-                actual->sgtEstadoX0 = estadoGanador0;
-            }
-
-            actual = actual->sgt;
-            i++;
-            j++;
-        }
-    }
-}
-
 void asignarFF_tipoD(Estado*& estados, vector<string> &ff, size_t cantidadFF){
 	
 	Estado* actual= estados;
@@ -1502,17 +1528,6 @@ void verReflejos(vector<vector<Kcelda>> &mapa){
 }
 //********************************************************************************************************************************
 //AUXILIARES
-
-void salidaString(Estado*& estados, string& salida0101){
-	
-	Estado* actual= estados;
-	
-	while(actual!=NULL){
-		salida0101 += actual->salida0;
-		salida0101 += actual->salida1;
-		actual= actual->sgt;
-	}
-}
 
 void resultadosFinales(string selecciones[4], size_t numFF, vector<vector<vector<Kcelda>>> &mapas, int tipoFF, vector<vector<string>> &funciones, vector<string> &salidafunciones, size_t nFF){
 	
