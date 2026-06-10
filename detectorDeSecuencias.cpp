@@ -137,6 +137,11 @@ void mostrarResultado(vector<string>& funciones, int a, char tipo, size_t nFF);
 void imprimirMapa2(vector<vector<vector<Kcelda>>>& mapas, int tipoFF, vector<vector<string>>& funciones, vector<vector<Kcelda>>& mapasalida, vector<string>& salidafunciones, size_t nFF);
 void resultadosFinales(string selecciones[4], size_t numFF, vector<vector<vector<Kcelda>>>& mapas, int tipoFF, vector<vector<string>>& funciones, vector<string>& salidafunciones, size_t nFF);
 
+
+// ============================================================
+// 1. Utilidades de consola
+// ============================================================
+
 void gotoxy(int x, int y) {
     COORD coord;
     coord.X = x;
@@ -144,6 +149,113 @@ void gotoxy(int x, int y) {
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 }
 
+void titulo(){
+    gotoxy(19,2); cout<<" =============================================== ";
+    gotoxy(19,3); cout<<" =                 Detector de                 = ";
+    gotoxy(19,4); cout<<" =                 Secuencias                  = ";
+    gotoxy(19,5); cout<<" =============================================== ";
+	cout<<endl<<endl;
+}
+
+void manejarNavegacion(char tecla, int& selectedOption, int maxOpciones) {
+    if (tecla == 72) {  // Flecha arriba (ASCII 72)
+        selectedOption = (selectedOption > 0) ? selectedOption - 1 : maxOpciones - 1;
+    } else if (tecla == 80) {  // Flecha abajo (ASCII 80)
+        selectedOption = (selectedOption < maxOpciones - 1) ? selectedOption + 1 : 0;
+    }
+}
+
+int mostrarMenu(const string opciones[], int numOpciones, const string seleccionAnterior[], const string pregunta, const string categorias[]) {
+    int selectedOption = 0;
+    char tecla;
+
+    do {
+        system("cls");
+        titulo();
+        
+        cout << "Seleccion actual:\n";
+        for (int i = 0; i < 3; i++) {
+            if (!seleccionAnterior[i].empty()) {
+                cout << i + 1 << ". " <<categorias[i]<< seleccionAnterior[i] << endl;
+            }
+        }
+        cout <<endl<< pregunta<<endl;
+
+        
+        for (int i = 0; i < numOpciones; i++) {
+            if (i == selectedOption)
+                cout << "> " << opciones[i] << endl; 
+            else
+                cout << "  " << opciones[i] << endl;
+        }
+
+        tecla = _getch(); 
+        if (tecla == 72 || tecla == 80) { 
+            manejarNavegacion(tecla, selectedOption, numOpciones);
+        }
+
+    } while (tecla != 13); 
+
+    return selectedOption;
+}
+
+void opciones(int opcionActual) {
+    string options[4] = {
+        "1. Diagrama de Estados (tabla)",
+        "2. Tabla de Estados",
+        "3. Simplificacion",
+        "4. Resultados Finales"
+    };
+
+    for (int i = 0; i < 4; i++) {
+        if (i == opcionActual) {
+            cout << " > " << options[i] << endl; 
+        } else {
+            cout << "   " << options[i] << endl;
+        }
+    }
+    
+    gotoxy(4, 14); cout<<"Pulse <0> para ingresar otra secuencia.";
+    gotoxy(4, 15); cout<<"Pulse <Esc> para salir.";
+}
+
+int manejarOpcionesMenu(bool& salir, bool& otro){
+
+	int opcionActual= 0;
+	const int TOTAL_OPCIONES = 4;
+	
+	while(true){
+		system("cls");
+		titulo();		
+		opciones(opcionActual);
+		
+		char tecla= _getch();
+		
+		if(tecla==-32 || tecla==224){		//arriba/abajo
+			tecla= _getch();
+			
+			if(tecla==72){
+				opcionActual--;
+				if(opcionActual < 0) opcionActual = TOTAL_OPCIONES-1;
+			}else if(tecla==80){
+				opcionActual++;
+				if(opcionActual >= TOTAL_OPCIONES) opcionActual= 0;
+			}
+			
+        } else if (tecla == 27) { 
+        	salir= true;
+            break; 
+        } else if (tecla == '0') { 
+        	otro= true;
+			break;
+
+		}else if(tecla=='\r'){		
+			break;
+		}
+	}
+	
+	return opcionActual;
+}
 
 //TODO PARA EL KARNAUGHT
 bool esPotencia2(int contCeldas) {		
@@ -1386,114 +1498,6 @@ void verReflejos(vector<vector<Kcelda>> &mapa){
 }
 //********************************************************************************************************************************
 //AUXILIARES
-
-void titulo(){
-    gotoxy(19,2); cout<<" =============================================== ";
-    gotoxy(19,3); cout<<" =                 Detector de                 = ";
-    gotoxy(19,4); cout<<" =                 Secuencias                  = ";
-    gotoxy(19,5); cout<<" =============================================== ";
-	cout<<endl<<endl;
-}
-
-void manejarNavegacion(char tecla, int& selectedOption, int maxOpciones) {
-    if (tecla == 72) {  // Flecha arriba (ASCII 72)
-        selectedOption = (selectedOption > 0) ? selectedOption - 1 : maxOpciones - 1;
-    } else if (tecla == 80) {  // Flecha abajo (ASCII 80)
-        selectedOption = (selectedOption < maxOpciones - 1) ? selectedOption + 1 : 0;
-    }
-}
-
-int mostrarMenu(const string opciones[], int numOpciones, const string seleccionAnterior[], const string pregunta, const string categorias[]) {
-    int selectedOption = 0;
-    char tecla;
-
-    do {
-        system("cls");
-        titulo();
-        
-        cout << "Seleccion actual:\n";
-        for (int i = 0; i < 3; i++) {
-            if (!seleccionAnterior[i].empty()) {
-                cout << i + 1 << ". " <<categorias[i]<< seleccionAnterior[i] << endl;
-            }
-        }
-        cout <<endl<< pregunta<<endl;
-
-        
-        for (int i = 0; i < numOpciones; i++) {
-            if (i == selectedOption)
-                cout << "> " << opciones[i] << endl; 
-            else
-                cout << "  " << opciones[i] << endl;
-        }
-
-        tecla = _getch(); 
-        if (tecla == 72 || tecla == 80) { 
-            manejarNavegacion(tecla, selectedOption, numOpciones);
-        }
-
-    } while (tecla != 13); 
-
-    return selectedOption;
-}
-
-void opciones(int opcionActual) {
-    string options[4] = {
-        "1. Diagrama de Estados (tabla)",
-        "2. Tabla de Estados",
-        "3. Simplificacion",
-        "4. Resultados Finales"
-    };
-
-    for (int i = 0; i < 4; i++) {
-        if (i == opcionActual) {
-            cout << " > " << options[i] << endl; 
-        } else {
-            cout << "   " << options[i] << endl;
-        }
-    }
-    
-    gotoxy(4, 14); cout<<"Pulse <0> para ingresar otra secuencia.";
-    gotoxy(4, 15); cout<<"Pulse <Esc> para salir.";
-}
-
-int manejarOpcionesMenu(bool& salir, bool& otro){
-
-	int opcionActual= 0;
-	const int TOTAL_OPCIONES = 4;
-	
-	while(true){
-		system("cls");
-		titulo();		
-		opciones(opcionActual);
-		
-		char tecla= _getch();
-		
-		if(tecla==-32 || tecla==224){		//arriba/abajo
-			tecla= _getch();
-			
-			if(tecla==72){
-				opcionActual--;
-				if(opcionActual < 0) opcionActual = TOTAL_OPCIONES-1;
-			}else if(tecla==80){
-				opcionActual++;
-				if(opcionActual >= TOTAL_OPCIONES) opcionActual= 0;
-			}
-			
-        } else if (tecla == 27) { 
-        	salir= true;
-            break; 
-        } else if (tecla == '0') { 
-        	otro= true;
-			break;
-
-		}else if(tecla=='\r'){		
-			break;
-		}
-	}
-	
-	return opcionActual;
-}
 
 void salidaString(Estado*& estados, string& salida0101){
 	
