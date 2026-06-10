@@ -527,6 +527,105 @@ void salidaString(Estado*& estados, string& salida0101){
 	}
 }
 
+// ============================================================
+// 4. Asignacion de flip-flops
+// ============================================================
+
+// Flip-flop D: el valor a guardar es directamente el bit del estado siguiente.
+void asignarFF_tipoD(Estado*& estados, vector<string> &ff, size_t cantidadFF){
+	
+	Estado* actual= estados;
+	
+	if(actual==NULL){
+		cout<<"La lista Estados esta vacia!"<<endl;
+		return;
+	}else{
+		while(actual!=NULL){
+			for(size_t i=0; i<cantidadFF; i++){
+				ff[i] += actual->sgtEstadoX0[i];
+				ff[i] += actual->sgtEstadoX1[i];
+			}
+			actual= actual->sgt;
+		}
+	}
+}
+
+// Flip-flop T: T = 1 si el bit cambia entre el estado actual y el siguiente, 0 si se mantiene.
+void asignarFF_tipoT(Estado*& estados, vector<string> &ff, size_t cantidadFF){
+	Estado* actual= estados;
+	
+	if(actual==NULL){
+		cout<<"La lista Estados esta vacia"<<endl;
+		return;
+	}else{
+		while(actual!=NULL){
+			for(size_t i=0; i<cantidadFF; i++){
+				if(actual->id[i]==actual->sgtEstadoX0[i]){
+					ff[i] += "0";
+				}else{
+					ff[i] += "1";
+				}
+				
+				if(actual->id[i]==actual->sgtEstadoX1[i]){
+					ff[i] += "0";
+				}else{
+					ff[i] += "1";
+				}
+			}
+			actual= actual->sgt;
+		}
+	}
+}
+
+// Flip-flop JK: usa la tabla de excitacion. Segun el bit actual, J o K queda como "don't care" (XX).
+void asignarFF_tipoJK(Estado*& estados, vector<string> &ff, vector<string> &ff2, size_t cantidadFF){
+	Estado* actual= estados;
+	
+	if(actual==NULL){
+		cout<<"La lista Estados esta vacia"<<endl;
+		return;
+	}else{
+		while(actual!=NULL){
+			for(size_t i=0; i<cantidadFF; i++){
+				//J
+				if(actual->id[i]!='0'){
+					ff[i] += "XX";
+				}else{
+					if(actual->id[i]==actual->sgtEstadoX0[i]){
+						ff[i] += "0";
+					}else{
+						ff[i] += "1";
+					}
+					
+					if(actual->id[i]==actual->sgtEstadoX1[i]){
+						ff[i] += "0";
+					}else{
+						ff[i] += "1";
+					}
+				}
+				
+				//K
+				if(actual->id[i]!='1'){
+					ff2[i] += "XX";
+				}else{
+					if(actual->id[i]==actual->sgtEstadoX0[i]){
+						ff2[i] += "0";
+					}else{
+						ff2[i] += "1";
+					}
+					
+					if(actual->id[i]==actual->sgtEstadoX1[i]){
+						ff2[i] += "0";
+					}else{
+						ff2[i] += "1";
+					}
+				}
+			}
+			actual= actual->sgt;
+		}
+	}	
+}
+
 //TODO PARA EL KARNAUGHT
 bool esPotencia2(int contCeldas) {		
     return (contCeldas > 0) && ((contCeldas & (contCeldas - 1)) == 0);
@@ -1354,97 +1453,6 @@ void mostrarTablaEstados(int tam, Estado* estados, vector<string> flip1, vector<
 	
 }
 
-void asignarFF_tipoD(Estado*& estados, vector<string> &ff, size_t cantidadFF){
-	
-	Estado* actual= estados;
-	
-	if(actual==NULL){
-		cout<<"La lista Estados esta vacia!"<<endl;
-		return;
-	}else{
-		while(actual!=NULL){
-			for(size_t i=0; i<cantidadFF; i++){
-				ff[i] += actual->sgtEstadoX0[i];
-				ff[i] += actual->sgtEstadoX1[i];
-			}
-			actual= actual->sgt;
-		}
-	}
-}
-
-void asignarFF_tipoT(Estado*& estados, vector<string> &ff, size_t cantidadFF){
-	Estado* actual= estados;
-	
-	if(actual==NULL){
-		cout<<"La lista Estados esta vacia"<<endl;
-		return;
-	}else{
-		while(actual!=NULL){
-			for(size_t i=0; i<cantidadFF; i++){
-				if(actual->id[i]==actual->sgtEstadoX0[i]){
-					ff[i] += "0";
-				}else{
-					ff[i] += "1";
-				}
-				
-				if(actual->id[i]==actual->sgtEstadoX1[i]){
-					ff[i] += "0";
-				}else{
-					ff[i] += "1";
-				}
-			}
-			actual= actual->sgt;
-		}
-	}
-}
-
-void asignarFF_tipoJK(Estado*& estados, vector<string> &ff, vector<string> &ff2, size_t cantidadFF){
-	Estado* actual= estados;
-	
-	if(actual==NULL){
-		cout<<"La lista Estados esta vacia"<<endl;
-		return;
-	}else{
-		while(actual!=NULL){
-			for(size_t i=0; i<cantidadFF; i++){
-				//J
-				if(actual->id[i]!='0'){
-					ff[i] += "XX";
-				}else{
-					if(actual->id[i]==actual->sgtEstadoX0[i]){
-						ff[i] += "0";
-					}else{
-						ff[i] += "1";
-					}
-					
-					if(actual->id[i]==actual->sgtEstadoX1[i]){
-						ff[i] += "0";
-					}else{
-						ff[i] += "1";
-					}
-				}
-				
-				//K
-				if(actual->id[i]!='1'){
-					ff2[i] += "XX";
-				}else{
-					if(actual->id[i]==actual->sgtEstadoX0[i]){
-						ff2[i] += "0";
-					}else{
-						ff2[i] += "1";
-					}
-					
-					if(actual->id[i]==actual->sgtEstadoX1[i]){
-						ff2[i] += "0";
-					}else{
-						ff2[i] += "1";
-					}
-				}
-			}
-			actual= actual->sgt;
-		}
-	}	
-}
 
 void mostrarFF(vector<string> ff){
 	int i=0;
