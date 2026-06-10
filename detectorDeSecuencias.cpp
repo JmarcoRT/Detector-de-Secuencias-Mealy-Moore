@@ -856,7 +856,8 @@ void agregarAlGrupo(Celda*& encontrados, int x, int y, int eje, int posEje, vect
 	}
 }
 
-bool buscarPosicion(Celda* actual, vector<vector<Kcelda>> &mapa, int eje, int posEje, size_t& x, size_t& y) {		//un poco raro el -1, pero SI funciona bien
+// Busca el reflejo de 'actual' por un eje dado y devuelve su posicion (x,y). False si no lo tiene.
+bool buscarPosicion(Celda* actual, vector<vector<Kcelda>> &mapa, int eje, int posEje, size_t& x, size_t& y) {
     Celda* temp = actual;
     Kcelda* temp2 = &mapa[temp->x][temp->y];
     Reflejo* temp3 = (posEje == 0) ? temp2->horizontal : temp2->vertical;
@@ -872,6 +873,7 @@ bool buscarPosicion(Celda* actual, vector<vector<Kcelda>> &mapa, int eje, int po
     return false; // No se encontro reflejo
 }
 
+// True si la celda (x,y) esta dentro del mapa y su valor no es "0" (es agrupable: "1" o "X").
 bool estaEnElMapa(vector<vector<Kcelda>> &mapa, size_t x, size_t y) {
     
     if (x >= mapa.size() || y >= mapa[0].size()) {
@@ -885,16 +887,16 @@ bool estaEnElMapa(vector<vector<Kcelda>> &mapa, size_t x, size_t y) {
     }
 }
 
-bool esPosible(const vector<Eje> &ejes, Celda*& encontrados, vector<vector<Kcelda>> &mapa){ //si los encontrados tienen posibilidad de encontrar a su reflejo (en el mapa)
+// True si, por cada eje ya usado, todos los miembros del grupo tienen su reflejo agrupable.
+// Es lo que mantiene el grupo como un rectangulo valido al ir creciendo.
+bool esPosible(const vector<Eje> &ejes, Celda*& encontrados, vector<vector<Kcelda>> &mapa){
 	for (const auto &eje : ejes) {
         Celda* actual = encontrados;
         while (actual != NULL) {
-            // Buscar posicion del reflejo
             size_t x, y;
             if(!buscarPosicion(actual, mapa, eje.valor, eje.posicion, x, y)){
             	return false;
 			}else{
-				// Buscar si esta en encontrados
             	if (!estaEnElMapa(mapa, x, y)) {
                 	return false;
            		}
@@ -905,8 +907,9 @@ bool esPosible(const vector<Eje> &ejes, Celda*& encontrados, vector<vector<Kceld
     return true;
 }
 
+// Intenta sumar al grupo un reflejo valido de la cabeza actual.
+// Prioridad: "1" horizontal, "1" vertical, "X" horizontal, "X" vertical. True si agrego alguno.
 bool hayReflejo(Celda*& encontrados, vector<vector<Kcelda>> &mapa, vector<Eje> &ejes) {
-	//cout<<"Celda actual: "<<encontrados->x<<","<<encontrados->y<<endl;	//<----- esto servia al depurar
 	Kcelda celda_actual = mapa[encontrados->x][encontrados->y];
 	bool encontrado = false;
 	
@@ -917,9 +920,9 @@ bool hayReflejo(Celda*& encontrados, vector<vector<Kcelda>> &mapa, vector<Eje> &
 	// HORIZONTAL 1
 	while (horiz != NULL) {
 		if (mapa[horiz->fil][horiz->col].valor == "1" && sinRecoger(encontrados, horiz->fil, horiz->col) && sinPasar(pasados, horiz->fil, horiz->col) && esPosible(ejes, encontrados, mapa)){
-			agregarAlGrupo(encontrados, horiz->fil, horiz->col, horiz->eje, 0, ejes); // 0 indica horizontal
+			agregarAlGrupo(encontrados, horiz->fil, horiz->col, horiz->eje, 0, ejes);
 			encontrado = true;
-			break; // Sal del bucle porque ya encontraste un reflejo
+			break;
 		}
 		horiz = horiz->sgt;
 	}
@@ -930,7 +933,7 @@ bool hayReflejo(Celda*& encontrados, vector<vector<Kcelda>> &mapa, vector<Eje> &
 		if (mapa[verti->fil][verti->col].valor == "1" && sinRecoger(encontrados, verti->fil, verti->col) && sinPasar(pasados, verti->fil, verti->col) && esPosible(ejes, encontrados, mapa)) {
 			agregarAlGrupo(encontrados, verti->fil, verti->col, verti->eje, 1, ejes); // 1 indica vertical
 			encontrado = true;
-			break; // Sal del bucle porque ya encontraste un reflejo
+			break;
 		}
 		verti = verti->sgt;
 	}
@@ -943,9 +946,9 @@ bool hayReflejo(Celda*& encontrados, vector<vector<Kcelda>> &mapa, vector<Eje> &
 	// HORIZONTAL X
 	while (horiz != NULL) {
 		if (mapa[horiz->fil][horiz->col].valor == "X" && sinRecoger(encontrados, horiz->fil, horiz->col) && sinPasar(pasados, horiz->fil, horiz->col) && esPosible(ejes, encontrados, mapa)) {
-			agregarAlGrupo(encontrados, horiz->fil, horiz->col, horiz->eje, 0, ejes); // 0 indica horizontal
+			agregarAlGrupo(encontrados, horiz->fil, horiz->col, horiz->eje, 0, ejes);
 			encontrado = true;
-			break; // Sal del bucle porque ya encontraste un reflejo
+			break;
 		}
 		horiz = horiz->sgt;
 	}
@@ -956,13 +959,14 @@ bool hayReflejo(Celda*& encontrados, vector<vector<Kcelda>> &mapa, vector<Eje> &
 		if (mapa[verti->fil][verti->col].valor == "X" && sinRecoger(encontrados, verti->fil, verti->col) && sinPasar(pasados, verti->fil, verti->col) && esPosible(ejes, encontrados, mapa)) {
 			agregarAlGrupo(encontrados, verti->fil, verti->col, verti->eje, 1, ejes); // 1 indica vertical
 			encontrado = true;
-			break; // Sal del bucle porque ya encontraste un reflejo
+			break;
 		}
 		verti = verti->sgt;
 	}
 	return encontrado; // Devuelve si se encontro algun reflejo
-}	
+}
 
+// True si la celda (x,y) ya esta en el grupo.
 bool estaLaCelda(Celda*& encontrados, size_t x, size_t y){
 	Celda* actual= encontrados;
 	
@@ -975,17 +979,17 @@ bool estaLaCelda(Celda*& encontrados, size_t x, size_t y){
 	return false;
 }
 
+// Chequeo final: el grupo esta "cerrado" si por cada eje usado, el reflejo de cada miembro
+// tambien esta dentro del grupo.
 bool todosTienenReflejo(const vector<Eje> &ejes, Celda*& encontrados, vector<vector<Kcelda>> &mapa) {
     for (const auto &eje : ejes) {
         Celda* actual = encontrados;
         while (actual != NULL) {
-            // Buscar posicion del reflejo
             size_t x, y;
             if(!buscarPosicion(actual, mapa, eje.valor, eje.posicion, x, y)){
             	return false;
 			}
 
-            // Buscar si esta en encontrados
             if (!estaLaCelda(encontrados, x, y)) {
                 return false;
             }
@@ -995,13 +999,10 @@ bool todosTienenReflejo(const vector<Eje> &ejes, Celda*& encontrados, vector<vec
     return true;
 }
 
-void retrocederCelda(Celda*& encontrados, vector<Eje>& ejes) {		//quita el elemento inicial (esto es asi porque el agregar() es por el inicio)
+// Quita la celda del inicio del grupo y descarta el ultimo eje (se agrega por el inicio).
+void retrocederCelda(Celda*& encontrados, vector<Eje>& ejes) {
     if (encontrados != NULL) { 
-    	//Pasado* pasados= encontrados->sgt->celdasPasadas;
-    	//cout<<pasados->x<<pasados->y<<endl;
         Celda* temp = encontrados;
-        //cout<<temp->x<<temp->y<<endl;
-        //cout<<temp->sgt->x<<temp->sgt->y<<endl;
         encontrados = temp->sgt;  
         if (encontrados != NULL) {  
             encontrados->ant = NULL;
@@ -1014,9 +1015,8 @@ void retrocederCelda(Celda*& encontrados, vector<Eje>& ejes) {		//quita el eleme
     }
 }
 
+// Marca como cubiertos todos los '1' que quedaron dentro del grupo recien armado.
 void marcarAlNuevoGrupo(vector<Buscado> &buscados, Celda*& encontrados){
-	//tener la posicion de cada encontrado
-	//buscarlo en el vector
 	Celda* actual= encontrados;
 	int tam= buscados.size();
 	
@@ -1031,20 +1031,19 @@ void marcarAlNuevoGrupo(vector<Buscado> &buscados, Celda*& encontrados){
 	}
 }
 
+// Bucle principal: cubre cada '1' sin marcar formando grupos validos.
+// Crece el grupo por reflejos, lo fuerza a potencia de 2, verifica que quede cerrado y avanza.
 void simplificacion(vector<vector<Kcelda>>& mapa, vector<Buscado>& buscados, Grupo*& grupos) {
     if (grupos == NULL) {
-        grupos = new Grupo;		//necesario
+        grupos = new Grupo;
         grupos->unGrupo = NULL;  
         grupos->sgt = NULL;
     }
 
     Grupo* gruposK = grupos; 
-    Buscado* actual = buscando1SinMarcar(buscados);  // Obtener el primer buscado sin marcar
+    Buscado* actual = buscando1SinMarcar(buscados);
 
     while (actual != NULL) {  
-        //cout<< "----------------------"<<endl;
-		//cout << "Procesando elemento en (" << actual->x << ", " << actual->y << ")" << endl;
-
         if (gruposK->unGrupo == NULL) {
             gruposK->unGrupo = NULL;  
         }
@@ -1059,15 +1058,13 @@ void simplificacion(vector<vector<Kcelda>>& mapa, vector<Buscado>& buscados, Gru
 
             while (hayReflejo(gruposK->unGrupo, mapa, ejes)) {
                 contCeldas++;
-                //cout<<"+"<<contCeldas<<endl;         <----- esto servia al depurar
             }
 			
-           
+            // Fuerza el tamano del grupo a potencia de 2 (retrocede si no lo es).
             while (!esPotencia2(contCeldas)) {
-                if (contCeldas == 1) break;  // No se puede reducir mas
-                retrocederCelda(gruposK->unGrupo, ejes);  // Retroceder una celda
+                if (contCeldas == 1) break;
+                retrocederCelda(gruposK->unGrupo, ejes);
                 contCeldas--;
-                //cout<<"*"<<contCeldas<<endl;   <----- esto servia al depurar
                 huboCambios = true;
                 break;
             }
@@ -1075,12 +1072,11 @@ void simplificacion(vector<vector<Kcelda>>& mapa, vector<Buscado>& buscados, Gru
             	continue;
 			}
 
-            // Verificar si todos tienen reflejo
+			// Verifica que el grupo quede cerrado sobre todos sus ejes.
             while (!todosTienenReflejo(ejes, gruposK->unGrupo, mapa)) {
                 if (contCeldas == 1) break;  
                 retrocederCelda(gruposK->unGrupo, ejes);
                 contCeldas--;
-                //cout<<"-"<<contCeldas<<endl;      <----- esto servia al depurar
                 huboCambios = true;
                 break;
             }
@@ -1100,15 +1096,21 @@ void simplificacion(vector<vector<Kcelda>>& mapa, vector<Buscado>& buscados, Gru
     }
 }
 
-void interpretar(Grupo* grupos, vector<vector<Kcelda>> &mapa, vector<string> &funciones) {		//asume que cada grupo esta unido (osea q no hay celdas aisladas, sino todos unidos)
-    Grupo* actual2 = grupos;																//se asume que los valores de primeraCelda->x y primeraCelda->y son admisibles (dentro del rango)
+// ============================================================
+// 8. Interpretacion
+// ============================================================
+
+//Se asume que cada grupo esta unido (osea q no hay celdas aisladas, sino todos unidos)
+//ademas que los valores de primeraCelda->x y primeraCelda->y son admisibles (dentro del rango)
+void interpretar(Grupo* grupos, vector<vector<Kcelda>> &mapa, vector<string> &funciones) {
+    Grupo* actual2 = grupos;
     int j = 0;
 
     // Recorremos los grupos
     while (actual2 != NULL) {
         Grupo* actual = actual2;
-        Celda* primeraCelda = actual->unGrupo;	//agregado* , no manejar directamente con actual->unGrupo
-        if (!primeraCelda) {		//agregado *
+        Celda* primeraCelda = actual->unGrupo;
+        if (!primeraCelda) {
             actual2 = actual2->sgt;
             continue;
         }
@@ -1140,137 +1142,9 @@ void interpretar(Grupo* grupos, vector<vector<Kcelda>> &mapa, vector<string> &fu
     }
 }
 
-void mostrarResultado(vector<string> &funciones, int a, char tipo, size_t nFF) {		//IZQUIERDA= ESTADO S0 	|  no muestra nada si sale 1
-    int tam = funciones.size();
-    bool huboAlguno= false;
-
-	cout << tipo << a << ": ";
-	
-    for (int i = 0; i < tam; i++) {
-        string cad = funciones[i];
-        
-        
-	        for (size_t j = 0; j < cad.size(); j++) {
-	            if (cad[j] != 'X') {
-	            	if(j==nFF){
-	            		cout<<"E";
-					}else{
-						cout << "Q" << j;
-					}
-					
-	                huboAlguno= true;
-	                if (cad[j] == '0') {
-	                    cout << "*";
-	                }
-	                cout << " ";
-	            }
-	        }
-	        
-	        if(i!=tam-1){
-	        	string aux= funciones[i+1];
-	        	if(aux!="") cout << "+ "; 
-			}        	
-		
-    }
-    
-    if(!huboAlguno){
-    	cout<<"1";
-	}
-    cout<<endl;
-}
-
-//**********************************************************************************************************************************************************************
-
-
-void imprimirMapa(vector<vector<Kcelda>> &mapa){
-	
-	cout<<endl<<"MAPA: "<<endl;
-	for(size_t i=0; i<mapa.size(); i++){
-		for(size_t j=0; j<mapa[i].size(); j++){
-			cout<<mapa[i][j].izq<<mapa[i][j].der<<" | ";
-		}
-		cout<<endl;
-	}
-	cout<<endl;
-}
-
-
-void imprimirMapa2(vector<vector<vector<Kcelda>>> &mapas, int tipoFF, vector<vector<string>> &funciones,  vector<vector<Kcelda>>& mapasalida, vector<string>& salidafunciones, size_t nFF){	
-	
-	size_t tam= mapas.size();
-	
-	string tipo;
-	if(tipoFF==0){
-		tipo="D";
-	}else if(tipoFF==1){
-		tipo="T";
-	}else{
-		tipo="JK";
-		tam= tam/2;
-	}
-	
-	cout<<"Orden de variables: ";
-	for(size_t i=0; i<=nFF; i++){
-		if(i==nFF){
-			cout<<"E";
-		}else{
-			cout<<tipo[0]<<i<<" ";
-		}
-	}
-	cout<<endl<<endl;
-	
-	
-	for(size_t k=0; k<tam; k++){
-		cout<<"MAPA PARA "<<tipo[0]<<k<<":"<<endl;
-		for(size_t i=0; i<mapas[k].size(); i++){
-			for(size_t j=0; j<mapas[k][i].size(); j++){
-				cout<<mapas[k][i][j].valor<<" | ";
-			}
-			cout<<endl;
-		}
-		cout<<endl;
-		mostrarResultado(funciones[k], k, tipo[0], nFF);
-		cout<<endl;		
-	}
-	
-	
-	if(tipoFF==2){
-		cout<<"Orden de variables: ";
-		for(size_t i=0; i<=nFF; i++){
-			if(i==nFF){
-				cout<<"E";
-			}else{
-				cout<<tipo[1]<<i<<" ";
-			}
-		}
-		cout<<endl<<endl;
-		
-		for(size_t k=tam; k<tam*2; k++){
-			cout<<"MAPA PARA "<<tipo[1]<<k-tam<<":"<<endl;
-			for(size_t i=0; i<mapas[k].size(); i++){
-				for(size_t j=0; j<mapas[k][i].size(); j++){
-					cout<<mapas[k][i][j].valor<<" | ";
-				}
-				cout<<endl;
-			}
-			cout<<endl;	
-			mostrarResultado(funciones[k], k-tam, tipo[1], nFF);
-			cout<<endl;	
-		}		
-	}
-	
-	cout<<"MAPA PARA Z (salida):"<<endl;
-
-		for(size_t i=0; i<mapasalida.size(); i++){
-			for(size_t j=0; j<mapasalida[i].size(); j++){
-				cout<<mapasalida[i][j].valor<<" | ";
-			}
-			cout<<endl;
-		}
-	cout<<endl;	
-	mostrarResultado(salidafunciones, 1,'Z', nFF);
-		
-}//********************************************************************************************************************************
+// ============================================================
+// 9. Impresion / salida
+// ============================================================
 
 void encabezadoTablaTransicion(){
 	gotoxy(10,4); cout<<"================================";
@@ -1279,8 +1153,6 @@ void encabezadoTablaTransicion(){
 	gotoxy(10,7); cout<<"================================";
 	cout<<endl;
 }
-//*********************************************************************************************************************************
-
 
 void mostrarIDs(Estado* estados){
 	encabezadoTablaTransicion();
@@ -1303,7 +1175,6 @@ void mostrarIDs(Estado* estados){
 		}
 	}
 }
-
 
 void mostrarTablaEstados(int tam, Estado* estados, vector<string> flip1, vector<string> flip2, int tipoFF){
 	Estado* actual= estados;
@@ -1530,37 +1401,123 @@ void mostrarTablaEstados(int tam, Estado* estados, vector<string> flip1, vector<
 		}			
 	}
 	
-	
-	
 }
 
+void mostrarResultado(vector<string> &funciones, int a, char tipo, size_t nFF) {		//IZQUIERDA= ESTADO S0 	|  no muestra nada si sale 1
+    int tam = funciones.size();
+    bool huboAlguno= false;
 
-void mostrarFF(vector<string> ff){
-	int i=0;
-	for(string cadena: ff){
-		cout<<"FF"<<i<<": "<<cadena<<endl;
-		i++;
+	cout << tipo << a << ": ";
+	
+    for (int i = 0; i < tam; i++) {
+        string cad = funciones[i];
+        
+        
+	        for (size_t j = 0; j < cad.size(); j++) {
+	            if (cad[j] != 'X') {
+	            	if(j==nFF){
+	            		cout<<"E";
+					}else{
+						cout << "Q" << j;
+					}
+					
+	                huboAlguno= true;
+	                if (cad[j] == '0') {
+	                    cout << "*";
+	                }
+	                cout << " ";
+	            }
+	        }
+	        
+	        if(i!=tam-1){
+	        	string aux= funciones[i+1];
+	        	if(aux!="") cout << "+ "; 
+			}        	
+		
+    }
+    
+    if(!huboAlguno){
+    	cout<<"1";
 	}
+    cout<<endl;
 }
 
-void verReflejos(vector<vector<Kcelda>> &mapa){
-	int filas= mapa.size();
-	int columnas= mapa[0].size();
-	cout<<endl<<"EJE  |  FILA  | COLUMNA"<<endl;
+void imprimirMapa2(vector<vector<vector<Kcelda>>> &mapas, int tipoFF, vector<vector<string>> &funciones,  vector<vector<Kcelda>>& mapasalida, vector<string>& salidafunciones, size_t nFF){	
 	
-	for(int i=0; i<filas; i++){
-		for(int j=0; j<columnas; j++){
-			Reflejo* actual = mapa[i][j].horizontal;
-			cout<<"Para ["<<i<<"]["<<j<<"]:"<<endl;
-			while(actual!=NULL){
-				cout<<actual->eje<<" | "<<actual->fil<<" | "<<actual->col<<endl;
-				actual= actual->sgt;
-			}
+	size_t tam= mapas.size();
+	
+	string tipo;
+	if(tipoFF==0){
+		tipo="D";
+	}else if(tipoFF==1){
+		tipo="T";
+	}else{
+		tipo="JK";
+		tam= tam/2;
+	}
+	
+	cout<<"Orden de variables: ";
+	for(size_t i=0; i<=nFF; i++){
+		if(i==nFF){
+			cout<<"E";
+		}else{
+			cout<<tipo[0]<<i<<" ";
 		}
 	}
+	cout<<endl<<endl;
+	
+	
+	for(size_t k=0; k<tam; k++){
+		cout<<"MAPA PARA "<<tipo[0]<<k<<":"<<endl;
+		for(size_t i=0; i<mapas[k].size(); i++){
+			for(size_t j=0; j<mapas[k][i].size(); j++){
+				cout<<mapas[k][i][j].valor<<" | ";
+			}
+			cout<<endl;
+		}
+		cout<<endl;
+		mostrarResultado(funciones[k], k, tipo[0], nFF);
+		cout<<endl;		
+	}
+	
+	
+	if(tipoFF==2){
+		cout<<"Orden de variables: ";
+		for(size_t i=0; i<=nFF; i++){
+			if(i==nFF){
+				cout<<"E";
+			}else{
+				cout<<tipo[1]<<i<<" ";
+			}
+		}
+		cout<<endl<<endl;
+		
+		for(size_t k=tam; k<tam*2; k++){
+			cout<<"MAPA PARA "<<tipo[1]<<k-tam<<":"<<endl;
+			for(size_t i=0; i<mapas[k].size(); i++){
+				for(size_t j=0; j<mapas[k][i].size(); j++){
+					cout<<mapas[k][i][j].valor<<" | ";
+				}
+				cout<<endl;
+			}
+			cout<<endl;	
+			mostrarResultado(funciones[k], k-tam, tipo[1], nFF);
+			cout<<endl;	
+		}		
+	}
+	
+	cout<<"MAPA PARA Z (salida):"<<endl;
+
+		for(size_t i=0; i<mapasalida.size(); i++){
+			for(size_t j=0; j<mapasalida[i].size(); j++){
+				cout<<mapasalida[i][j].valor<<" | ";
+			}
+			cout<<endl;
+		}
+	cout<<endl;	
+	mostrarResultado(salidafunciones, 1,'Z', nFF);
+		
 }
-//********************************************************************************************************************************
-//AUXILIARES
 
 void resultadosFinales(string selecciones[4], size_t numFF, vector<vector<vector<Kcelda>>> &mapas, int tipoFF, vector<vector<string>> &funciones, vector<string> &salidafunciones, size_t nFF){
 	
@@ -1602,6 +1559,44 @@ void resultadosFinales(string selecciones[4], size_t numFF, vector<vector<vector
 	mostrarResultado(salidafunciones, 1,'Z', nFF);
 }
 
+//********************************************************************************************************************************
+
+void imprimirMapa(vector<vector<Kcelda>> &mapa){
+	
+	cout<<endl<<"MAPA: "<<endl;
+	for(size_t i=0; i<mapa.size(); i++){
+		for(size_t j=0; j<mapa[i].size(); j++){
+			cout<<mapa[i][j].izq<<mapa[i][j].der<<" | ";
+		}
+		cout<<endl;
+	}
+	cout<<endl;
+}
+
+void mostrarFF(vector<string> ff){
+	int i=0;
+	for(string cadena: ff){
+		cout<<"FF"<<i<<": "<<cadena<<endl;
+		i++;
+	}
+}
+
+void verReflejos(vector<vector<Kcelda>> &mapa){
+	int filas= mapa.size();
+	int columnas= mapa[0].size();
+	cout<<endl<<"EJE  |  FILA  | COLUMNA"<<endl;
+	
+	for(int i=0; i<filas; i++){
+		for(int j=0; j<columnas; j++){
+			Reflejo* actual = mapa[i][j].horizontal;
+			cout<<"Para ["<<i<<"]["<<j<<"]:"<<endl;
+			while(actual!=NULL){
+				cout<<actual->eje<<" | "<<actual->fil<<" | "<<actual->col<<endl;
+				actual= actual->sgt;
+			}
+		}
+	}
+}
 
 
 int main(){
