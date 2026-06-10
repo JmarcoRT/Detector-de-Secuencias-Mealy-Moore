@@ -1,70 +1,77 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <math.h>
-#include <windows.h>
-#include <conio.h>
-#include <thread> 
-#include <chrono> 
+#include <cmath>
+#include <thread>
+#include <chrono>
+#include <windows.h>   // solo Windows: SetConsoleCursorPosition
+#include <conio.h>     // solo Windows: _getch
 using namespace std;
 
-//Maneja los estados*****************************************************************************************************************************************************
-struct Estado{
-	string id;
-	string bits;
-	string sgtEstadoX0;
-	string sgtEstadoX1;
-	string salida0;
-	string salida1;
+// ===================== Estados =====================
+struct Estado {
+	string id;            // codigo binario del estado (ej. "010")
+	string bits;          // prefijo de la secuencia reconocido hasta aqui
+	string sgtEstadoX0;   // id del estado siguiente con entrada 0
+	string sgtEstadoX1;   // id del estado siguiente con entrada 1
+	string salida0;       // salida Z con entrada 0
+	string salida1;       // salida Z con entrada 1
 	Estado* sgt;
 	Estado* ant;
 };
 
-//Maneja el mapa Karnaught****************************************************************************************************************************************************
-struct Reflejo{
-	int eje;
-	int fil;
-	int col;
+// ================== Mapa de Karnaugh ==================
+// Un reflejo = la celda con la que se empareja al doblar el mapa por un eje.
+struct Reflejo {
+	int eje;        // tamaño del doblez (limite1); identifica el eje, NO es 0/1
+	int fil;        // fila de la celda reflejada
+	int col;        // columna de la celda reflejada
 	Reflejo* sgt;
 };
 
-struct Kcelda{
-	string izq;	//numero bit posicion
-	string der;	//numero bit posicion	
-	string valor; //"0", "1" o "X"
-	Reflejo* horizontal;
-	Reflejo* vertical;
+struct Kcelda {
+	string izq;          // etiqueta Gray de la fila
+	string der;          // etiqueta Gray de la columna
+	string valor;        // "0", "1" o "X"
+	Reflejo* horizontal; // reflejos por ejes horizontales (sobre columnas)
+	Reflejo* vertical;   // reflejos por ejes verticales (sobre filas)
 };
 
-//Maneja el proceso de simplificacion****************************************************************************************************************************************************
-struct Pasado{		//para el retroceso
+// ================== Simplificacion ==================
+// Celdas ya intentadas desde una celda del grupo (para no reintentarlas al retroceder).
+struct Pasado {
 	size_t x;
 	size_t y;
-	Pasado* sgt;	
+	Pasado* sgt;
 };
-struct Celda{	//agregar por el inicio (no por el final)  |  se guarda las celdas q se estan agrrupando, pero aun no llega al final
+
+// Celda que forma parte del grupo que se esta armando.
+// La lista crece por el inicio, no por el final.
+struct Celda {
 	size_t x;
 	size_t y;
-	Pasado* celdasPasadas;
+	Pasado* celdasPasadas; // celdas ya probadas desde esta
 	Celda* sgt;
 	Celda* ant;
-}; 
+};
 
-//Maneja el vector de 1s***************************************************************************************************************************************************
-struct Buscado{
+// Eje de simetria usado al armar un grupo.
+struct Eje {
+	int valor;     // tamaño del doblez (igual que Reflejo.eje)
+	int posicion;  // 0: horizontal, 1: vertical
+};
+
+// ================== Celdas a cubrir (los 1s) ==================
+// Cada '1' del mapa que hay que cubrir. marcado = ya quedo dentro de un grupo.
+struct Buscado {
 	size_t x;
 	size_t y;
-	bool marcado;	
+	bool marcado;
 };
 
-struct Eje{
-	int valor;
-	int posicion;	//0: horizontal, 1: vertical
-};
-
-//Maneja las agrupaciones encontradas******************************************************************************************************************************************************
-struct Grupo{
-	Celda* unGrupo;
+// ================== Grupos encontrados ==================
+struct Grupo {
+	Celda* unGrupo; // primera celda del grupo
 	Grupo* sgt;
 };
 
