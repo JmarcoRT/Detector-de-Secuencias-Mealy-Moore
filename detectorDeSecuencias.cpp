@@ -75,7 +75,67 @@ struct Grupo {
 	Grupo* sgt;
 };
 
-//**********************************************************************************************************************************************************************
+// ===================== Prototipos =====================
+
+// 1. Utilidades de consola
+void gotoxy(int x, int y);
+void titulo();
+void manejarNavegacion(char tecla, int& selectedOption, int maxOpciones);
+int  mostrarMenu(const string opciones[], int numOpciones, const string seleccionAnterior[], const string pregunta, const string categorias[]);
+void opciones(int opcionActual);
+int  manejarOpcionesMenu(bool& salir, bool& otro);
+
+// 2. Conversion binaria / Gray
+string numEnBinario(size_t nbits, size_t numero);
+int    binarioADecimal(string numero);
+string gray(string numero);
+
+// 3. Construccion de estados
+void agregarEstado(Estado*& estados, size_t nbits, size_t posicion, string cadena);
+void agregarDont(Estado*& estados, size_t nbits, size_t posicion);
+void llenarEstados(Estado*& estados, string cadena, size_t cantidadEstados, size_t cantidadFF);
+void evaluarSgtEstado(Estado*& estados, string secuencia, size_t cantidadEstados, string traslape, string maquina);
+void salidaString(Estado*& estados, string& salida0101);
+
+// 4. Asignacion de flip-flops
+void asignarFF_tipoD(Estado*& estados, vector<string>& ff, size_t cantidadFF);
+void asignarFF_tipoT(Estado*& estados, vector<string>& ff, size_t cantidadFF);
+void asignarFF_tipoJK(Estado*& estados, vector<string>& ff, vector<string>& ff2, size_t cantidadFF);
+
+// 5. Armado del mapa de Karnaugh
+void armarKmapa(vector<vector<Kcelda>>& mapa, int var_izq, int var_der);
+void llenarMapa(Estado*& estados, vector<vector<Kcelda>>& mapa, string ff_valores, vector<Buscado>& buscados);
+
+// 6. Reflejos
+void agregarReflejo(Reflejo*& reflejos, int eje, int x, int y);
+void asignarReflejos(vector<vector<Kcelda>>& mapa, int var_izq, int var_der);
+
+// 7. Simplificacion
+bool esPotencia2(int contCeldas);
+Buscado* buscando1SinMarcar(vector<Buscado>& buscados);
+bool sinRecoger(Celda*& encontrados, size_t x, size_t y);
+bool sinPasar(Pasado* pasados, size_t x, size_t y);
+void agregarAlGrupo(Celda*& encontrados, int x, int y, int eje, int posEje, vector<Eje>& ejes);
+bool buscarPosicion(Celda* actual, vector<vector<Kcelda>>& mapa, int eje, int posEje, size_t& x, size_t& y);
+bool estaEnElMapa(vector<vector<Kcelda>>& mapa, size_t x, size_t y);
+bool esPosible(const vector<Eje>& ejes, Celda*& encontrados, vector<vector<Kcelda>>& mapa);
+bool hayReflejo(Celda*& encontrados, vector<vector<Kcelda>>& mapa, vector<Eje>& ejes);
+bool estaLaCelda(Celda*& encontrados, size_t x, size_t y);
+bool todosTienenReflejo(const vector<Eje>& ejes, Celda*& encontrados, vector<vector<Kcelda>>& mapa);
+void retrocederCelda(Celda*& encontrados, vector<Eje>& ejes);
+void marcarAlNuevoGrupo(vector<Buscado>& buscados, Celda*& encontrados);
+void simplificacion(vector<vector<Kcelda>>& mapa, vector<Buscado>& buscados, Grupo*& grupos);
+
+// 8. Interpretacion
+void interpretar(Grupo* grupos, vector<vector<Kcelda>>& mapa, vector<string>& funciones);
+
+// 9. Impresion / salida
+void encabezadoTablaTransicion();
+void mostrarIDs(Estado* estados);
+void mostrarTablaEstados(int tam, Estado* estados, vector<string> flip1, vector<string> flip2, int tipoFF);
+void mostrarResultado(vector<string>& funciones, int a, char tipo, size_t nFF);
+void imprimirMapa2(vector<vector<vector<Kcelda>>>& mapas, int tipoFF, vector<vector<string>>& funciones, vector<vector<Kcelda>>& mapasalida, vector<string>& salidafunciones, size_t nFF);
+void resultadosFinales(string selecciones[4], size_t numFF, vector<vector<vector<Kcelda>>>& mapas, int tipoFF, vector<vector<string>>& funciones, vector<string>& salidafunciones, size_t nFF);
 
 void gotoxy(int x, int y) {
     COORD coord;
