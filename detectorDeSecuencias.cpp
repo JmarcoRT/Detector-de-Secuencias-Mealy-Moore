@@ -763,24 +763,28 @@ void asignarReflejos(vector<vector<Kcelda>> &mapa, int var_izq, int var_der){
 	}
 }
 
+// ============================================================
+// 7. Simplificacion
+// ============================================================
 
-//TODO PARA EL KARNAUGHT
 bool esPotencia2(int contCeldas) {		
     return (contCeldas > 0) && ((contCeldas & (contCeldas - 1)) == 0);
 }
 
+// Devuelve el primer '1' aun no cubierto por ningun grupo, o NULL si ya no quedan.
 Buscado* buscando1SinMarcar(vector<Buscado>& buscados) {
     int tam = buscados.size();
     
     for (int i = 0; i < tam; i++) {
         if (!buscados[i].marcado) {
-            return &buscados[i]; // Retorna un puntero al struct encontrado
+            return &buscados[i]; 
         }
     }
-    return NULL; // Retorna null si no se encontro
+    return NULL; 
 }
 
-bool sinRecoger(Celda*& encontrados, size_t x, size_t y){		//busca el valor. Si no esta, manda true
+// True si la celda (x,y) NO esta todavia dentro del grupo.
+bool sinRecoger(Celda*& encontrados, size_t x, size_t y){
 	Celda* actual= encontrados;
 	
 	while(actual!=NULL){
@@ -792,6 +796,7 @@ bool sinRecoger(Celda*& encontrados, size_t x, size_t y){		//busca el valor. Si 
 	return true;
 }
 
+// True si (x,y) no se intento antes desde la celda actual (evita reintentos al retroceder).
 bool sinPasar(Pasado* pasados, size_t x, size_t y) {
     Pasado* actual = pasados;
 
@@ -804,6 +809,10 @@ bool sinPasar(Pasado* pasados, size_t x, size_t y) {
     return true; 
 }
 
+// Agrega una celda al grupo en construccion.
+// eje == 0 -> celda semilla (primera): solo se enlaza.
+// eje != 0 -> registra el eje usado y guarda la celda como "pasada" de la cabeza anterior.
+// La lista crece por el inicio.
 void agregarAlGrupo(Celda*& encontrados, int x, int y, int eje, int posEje, vector<Eje> &ejes) {
 	// Crear una nueva celda
 	Celda* nuevo = new Celda;
@@ -813,23 +822,20 @@ void agregarAlGrupo(Celda*& encontrados, int x, int y, int eje, int posEje, vect
 	nuevo->ant = NULL;
 	nuevo->celdasPasadas = NULL; 
 	
-	if (eje == 0) { 
-
+	if (eje == 0) { 				// celda semilla
 		encontrados = nuevo;
-
 	} else {
-
-		Eje nuevoEje;
+		Eje nuevoEje;				// registra el eje por el que se agrupo
 		nuevoEje.valor = eje;
 		nuevoEje.posicion = posEje;
 		ejes.push_back(nuevoEje);
 
-
-		nuevo->sgt = encontrados; 
+		nuevo->sgt = encontrados; 	// inserta al inicio de la lista
 		if (encontrados != NULL) { 
 			encontrados->ant = nuevo;
 		}
 
+		// Registra (x,y) entre las celdas ya probadas desde la cabeza anterior.
 		Pasado* nuevoPasado = new Pasado;
 		nuevoPasado->x = x;
 		nuevoPasado->y = y;
@@ -844,7 +850,6 @@ void agregarAlGrupo(Celda*& encontrados, int x, int y, int eje, int posEje, vect
 				actual = actual->sgt;
 			}
 			actual->sgt = nuevoPasado;
-			//cout<<nuevoPasado->x<<nuevoPasado->y<<endl;
 		}
 
 		encontrados = nuevo;
