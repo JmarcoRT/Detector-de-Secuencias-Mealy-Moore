@@ -626,6 +626,77 @@ void asignarFF_tipoJK(Estado*& estados, vector<string> &ff, vector<string> &ff2,
 	}	
 }
 
+// ============================================================
+// 5. Armado del mapa de Karnaugh
+// ============================================================
+
+// Etiqueta cada celda con su coordenada en codigo Gray (fila = izq, columna = der).
+void armarKmapa(vector<vector<Kcelda>> &mapa, int var_izq, int var_der){
+	
+	for(size_t i=0; i<mapa.size(); i++){
+		for(size_t j=0; j<mapa[i].size(); j++){
+			mapa[i][j].izq= gray(numEnBinario(var_izq, i));
+			mapa[i][j].der= gray(numEnBinario(var_der, j));
+		}
+	}
+}
+
+// Vuelca los valores de un flip-flop en el mapa: ubica cada celda por su id de estado + entrada,
+// marca "1"/"0"/"X" y guarda en 'buscados' las posiciones que son "1" (las que habra que cubrir).
+void llenarMapa(Estado*& estados, vector<vector<Kcelda>> &mapa, string ff_valores, vector<Buscado> &buscados){
+	
+	Estado* actual= estados;
+	Estado* inicio= estados;
+	
+	if(actual==NULL){
+		cout<<"La lista Estados esta vacia!"<<endl;
+		return;
+	}else{
+		int pos= 0;
+		
+		for(size_t i=0; i<mapa.size(); i++){
+			for(size_t j=0; j<mapa[i].size(); j++){
+				string cad= mapa[i][j].izq;		//tomo la posicion actual en el mapa (de las variables)
+				cad += mapa[i][j].der;
+				mapa[i][j].valor="";
+				
+				while(actual!=NULL){	//busco el estado q tiene esa posicion o combinacion (y mirare su id)
+					if(actual->id+"0"==cad){
+						mapa[i][j].valor= ff_valores[pos];
+						if(ff_valores[pos]=='1'){
+							Buscado nuevo;
+							nuevo.x= i;
+							nuevo.y= j;
+							nuevo.marcado= false;
+							 buscados.push_back(nuevo);
+						}
+						break; 
+					}
+					pos++;
+					if(actual->id+"1"==cad){
+						mapa[i][j].valor= ff_valores[pos];
+						if(ff_valores[pos]=='1'){
+							Buscado nuevo;
+							nuevo.x= i;
+							nuevo.y= j;
+							nuevo.marcado= false;
+							 buscados.push_back(nuevo);
+						}
+						break;
+					}
+					pos++;
+					actual= actual->sgt;
+				}
+				if(mapa[i][j].valor==""){
+				    mapa[i][j].valor="X";
+				}
+				pos=0;
+				actual= inicio;		
+			}
+		}	
+	}
+}
+
 //TODO PARA EL KARNAUGHT
 bool esPotencia2(int contCeldas) {		
     return (contCeldas > 0) && ((contCeldas & (contCeldas - 1)) == 0);
@@ -1038,15 +1109,6 @@ void mostrarResultado(vector<string> &funciones, int a, char tipo, size_t nFF) {
 
 //**********************************************************************************************************************************************************************
 
-void armarKmapa(vector<vector<Kcelda>> &mapa, int var_izq, int var_der){
-	
-	for(size_t i=0; i<mapa.size(); i++){
-		for(size_t j=0; j<mapa[i].size(); j++){
-			mapa[i][j].izq= gray(numEnBinario(var_izq, i));
-			mapa[i][j].der= gray(numEnBinario(var_der, j));
-		}
-	}
-}
 
 void imprimirMapa(vector<vector<Kcelda>> &mapa){
 	
@@ -1060,59 +1122,6 @@ void imprimirMapa(vector<vector<Kcelda>> &mapa){
 	cout<<endl;
 }
 
-void llenarMapa(Estado*& estados, vector<vector<Kcelda>> &mapa, string ff_valores, vector<Buscado> &buscados){
-	
-	Estado* actual= estados;
-	Estado* inicio= estados;
-	
-	if(actual==NULL){
-		cout<<"La lista Estados esta vacia!"<<endl;
-		return;
-	}else{
-		int pos= 0;
-		
-		for(size_t i=0; i<mapa.size(); i++){
-			for(size_t j=0; j<mapa[i].size(); j++){
-				string cad= mapa[i][j].izq;		//tomo la posicion actual en el mapa (de las variables)
-				cad += mapa[i][j].der;
-				mapa[i][j].valor="";
-				
-				while(actual!=NULL){	//busco el estado q tiene esa posicion o combinacion (y mirare su id)
-					if(actual->id+"0"==cad){
-						mapa[i][j].valor= ff_valores[pos];
-						if(ff_valores[pos]=='1'){
-							Buscado nuevo;
-							nuevo.x= i;
-							nuevo.y= j;
-							nuevo.marcado= false;
-							 buscados.push_back(nuevo);
-						}
-						break; 
-					}
-					pos++;
-					if(actual->id+"1"==cad){
-						mapa[i][j].valor= ff_valores[pos];
-						if(ff_valores[pos]=='1'){
-							Buscado nuevo;
-							nuevo.x= i;
-							nuevo.y= j;
-							nuevo.marcado= false;
-							 buscados.push_back(nuevo);
-						}
-						break;
-					}
-					pos++;
-					actual= actual->sgt;
-				}
-				if(mapa[i][j].valor==""){
-				    mapa[i][j].valor="X";
-				}
-				pos=0;
-				actual= inicio;		
-			}
-		}	
-	}
-}
 
 void imprimirMapa2(vector<vector<vector<Kcelda>>> &mapas, int tipoFF, vector<vector<string>> &funciones,  vector<vector<Kcelda>>& mapasalida, vector<string>& salidafunciones, size_t nFF){	
 	
