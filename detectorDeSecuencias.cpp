@@ -697,6 +697,73 @@ void llenarMapa(Estado*& estados, vector<vector<Kcelda>> &mapa, string ff_valore
 	}
 }
 
+// ============================================================
+// 6. Reflejos
+// ============================================================
+
+// Inserta un reflejo (al inicio de la lista) para una celda: el eje y la posicion (fil, col) reflejada.
+void agregarReflejo(Reflejo*& reflejos, int eje, int x, int y) {
+    Reflejo* nuevo = new Reflejo;
+    nuevo->eje = eje;
+    nuevo->fil = x;
+    nuevo->col = y;
+
+    nuevo->sgt = reflejos;
+
+    reflejos = nuevo;
+}
+
+// Precalcula, para cada celda, con que celda se empareja al doblar el mapa por cada eje de simetria.
+// Un eje se identifica por su tamano de doblez (limite1), que se va partiendo a la mitad:
+// el primer doblez abarca todo el ancho/alto, el siguiente la mitad, etc. (uno por variable).
+// Para cada celda en la columna/fila k, su reflejo cae en (limite2-1)-k dentro de su bloque de doblez.
+// Como los ejes escalan con el numero de variables, esto sirve para cualquier N.
+void asignarReflejos(vector<vector<Kcelda>> &mapa, int var_izq, int var_der){
+	int filas= mapa.size();
+	int columnas= mapa[0].size();
+	
+	//HORIZONTAL
+	int limite1= columnas;
+	int nVarsDerecha= var_der;
+	for(int i=0; i<var_der; i++){		//para cada eje
+		for(int j=0; j<filas; j++){		//para cada celda
+			int limite2= limite1;
+			for(int k=0, cont=0; k<columnas; k++){
+				if(cont==limite1){
+					limite2= limite2+((int)pow(2, nVarsDerecha+1));
+					cont=0;
+				}
+				int y= (limite2-1)-k;
+				agregarReflejo(mapa[j][k].horizontal, limite1, j, y);
+				cont++;
+			}
+		}
+		limite1= limite1/2;
+		nVarsDerecha--;
+	}
+	
+	//VERTICAL
+	limite1= filas;
+	int nVarsIzquierda= var_izq;
+	for(int i=0; i<var_izq; i++){		//para cada eje
+		for(int j=0; j<columnas; j++){	//para cada celda
+			int limite2= limite1;
+			for(int k=0, cont=0; k<filas; k++){
+				if(cont==limite1){
+					limite2= limite2+ ((int)pow(2, nVarsIzquierda+1));
+					cont=0;
+				}
+				int y= (limite2-1)-k;
+				agregarReflejo(mapa[k][j].vertical, limite1, y, j);
+				cont++;
+			}
+		}
+		limite1= limite1/2;
+		nVarsIzquierda--;
+	}
+}
+
+
 //TODO PARA EL KARNAUGHT
 bool esPotencia2(int contCeldas) {		
     return (contCeldas > 0) && ((contCeldas & (contCeldas - 1)) == 0);
@@ -1468,62 +1535,6 @@ void mostrarFF(vector<string> ff){
 	for(string cadena: ff){
 		cout<<"FF"<<i<<": "<<cadena<<endl;
 		i++;
-	}
-}
-
-void agregarReflejo(Reflejo*& reflejos, int eje, int x, int y) {
-    Reflejo* nuevo = new Reflejo;
-    nuevo->eje = eje;
-    nuevo->fil = x;
-    nuevo->col = y;
-
-    nuevo->sgt = reflejos;
-
-    reflejos = nuevo;
-}
-
-void asignarReflejos(vector<vector<Kcelda>> &mapa, int var_izq, int var_der){
-	int filas= mapa.size();
-	int columnas= mapa[0].size();
-	
-	//HORIZONTAL
-	int limite1= columnas;
-	int nVarsDerecha= var_der;
-	for(int i=0; i<var_der; i++){		//para cada eje
-		for(int j=0; j<filas; j++){		//para cada celda
-			int limite2= limite1;
-			for(int k=0, cont=0; k<columnas; k++){
-				if(cont==limite1){
-					limite2= limite2+((int)pow(2, nVarsDerecha+1));
-					cont=0;
-				}
-				int y= (limite2-1)-k;
-				agregarReflejo(mapa[j][k].horizontal, limite1, j, y);
-				cont++;
-			}
-		}
-		limite1= limite1/2;
-		nVarsDerecha--;
-	}
-	
-	//VERTICAL
-	limite1= filas;
-	int nVarsIzquierda= var_izq;
-	for(int i=0; i<var_izq; i++){		//para cada eje
-		for(int j=0; j<columnas; j++){	//para cada celda
-			int limite2= limite1;
-			for(int k=0, cont=0; k<filas; k++){
-				if(cont==limite1){
-					limite2= limite2+ ((int)pow(2, nVarsIzquierda+1));
-					cont=0;
-				}
-				int y= (limite2-1)-k;
-				agregarReflejo(mapa[k][j].vertical, limite1, y, j);
-				cont++;
-			}
-		}
-		limite1= limite1/2;
-		nVarsIzquierda--;
 	}
 }
 
